@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+
+*.db
+
+.env
+.env.*
+
+.streamlit/secrets.toml
+
+reports/*
