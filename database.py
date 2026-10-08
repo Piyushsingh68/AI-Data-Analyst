@@ -26,14 +26,18 @@ def save_dataset(df, table_name="uploaded_data"):
 
     connection = get_connection()
 
-    df.to_sql(
-        table_name,
-        connection,
-        if_exists="replace",
-        index=False
-    )
+    try:
 
-    connection.close()
+        df.to_sql(
+            table_name,
+            connection,
+            if_exists="replace",
+            index=False
+        )
+
+    finally:
+
+        connection.close()
 
 
 # ==================================================
@@ -44,14 +48,33 @@ def load_dataset(table_name="uploaded_data"):
 
     connection = get_connection()
 
-    df = pd.read_sql(
-        f"SELECT * FROM {table_name}",
-        connection
-    )
+    try:
 
-    connection.close()
+        # Check whether table exists first
+        table_exists = pd.read_sql(
+            """
+            SELECT name
+            FROM sqlite_master
+            WHERE type='table'
+            AND name=?
+            """,
+            connection,
+            params=(table_name,)
+        )
 
-    return df
+        if table_exists.empty:
+            return pd.DataFrame()
+
+        df = pd.read_sql(
+            f'SELECT * FROM "{table_name}"',
+            connection
+        )
+
+        return df
+
+    finally:
+
+        connection.close()
 
 
 # ==================================================
@@ -62,18 +85,44 @@ def get_table_info(table_name="uploaded_data"):
 
     connection = get_connection()
 
-    query = f"""
-    SELECT name
-    FROM sqlite_master
-    WHERE type='table'
-    AND name='{table_name}'
-    """
+    try:
 
-    result = pd.read_sql(
-        query,
-        connection
-    )
+        query = """
+        SELECT name
+        FROM sqlite_master
+        WHERE type='table'
+        AND name=?
+        """
 
-    connection.close()
+        result = pd.read_sql(
+            query,
+            connection,
+            params=(table_name,)
+        )
 
-    return result
+        return result
+
+    finally:
+
+        connection.close()
+
+
+# ==================================================
+# DELETE TABLE SAFELY
+# ==================================================
+
+def delete_table(table_name="uploaded_data"):
+
+    connection = get_connection()
+
+    try:
+
+        connection.execute(
+            f'DROP TABLE IF EXISTS "{table_name}"'
+        )
+
+        connection.commit()
+
+    finally:
+
+        connection.close()
