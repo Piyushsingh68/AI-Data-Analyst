@@ -9,9 +9,12 @@ from charts import generate_charts
 from outlier_detector import detect_outliers
 from kpi_generator import generate_kpis
 from ask_data import answer_question
-from database import save_dataset, load_dataset
 from time_analysis import analyze_time_data
-from insight_engine import generate_verified_findings
+from insight_engine import (
+    generate_verified_findings,
+    find_main_numeric_column,
+    find_main_category
+)
 
 
 # ============================================================
@@ -54,13 +57,10 @@ if uploaded_file is not None:
     # ========================================================
 
     if uploaded_file.name.endswith(".csv"):
-
         df = pd.read_csv(uploaded_file)
 
     else:
-
         df = pd.read_excel(uploaded_file)
-
 
     st.success(
         "File uploaded successfully!"
@@ -70,13 +70,12 @@ if uploaded_file is not None:
     # ========================================================
     # SQLITE DATABASE
     # ========================================================
-
-    save_dataset(df)
-
-    df = load_dataset()
+    # Database saving has been removed from the main upload
+    # flow because Streamlit Cloud can create SQLite state/race
+    # issues. The uploaded dataframe is already available as df.
 
     st.success(
-        "Dataset saved and loaded from SQLite database!"
+        "Dataset loaded successfully!"
     )
 
 
@@ -134,9 +133,7 @@ if uploaded_file is not None:
 
     analysis = analyze_dataset(df)
 
-
     col1, col2, col3, col4 = st.columns(4)
-
 
     col1.metric(
         "Numerical Columns",
@@ -147,7 +144,6 @@ if uploaded_file is not None:
         )
     )
 
-
     col2.metric(
         "Categorical Columns",
         len(
@@ -157,7 +153,6 @@ if uploaded_file is not None:
         )
     )
 
-
     col3.metric(
         "Date Columns",
         len(
@@ -166,7 +161,6 @@ if uploaded_file is not None:
             ]
         )
     )
-
 
     col4.metric(
         "Duplicate Rows",
@@ -265,7 +259,6 @@ if uploaded_file is not None:
         "🧹 Data Quality"
     )
 
-
     quality_df = pd.DataFrame({
 
         "Column":
@@ -287,7 +280,6 @@ if uploaded_file is not None:
 
     })
 
-
     st.dataframe(
         quality_df,
         use_container_width=True
@@ -302,9 +294,7 @@ if uploaded_file is not None:
         "📊 Automatic Data Visualization"
     )
 
-
     charts = generate_charts(df)
-
 
     if charts:
 
@@ -340,11 +330,9 @@ if uploaded_file is not None:
                     "### 📉 Data Distribution"
                 )
 
-
             st.pyplot(
                 figure
             )
-
 
     else:
 
@@ -362,9 +350,7 @@ if uploaded_file is not None:
         "📅 Time-Based Analysis"
     )
 
-
     time_analysis = analyze_time_data(df)
-
 
     if "error" in time_analysis:
 
@@ -382,7 +368,6 @@ if uploaded_file is not None:
             ]
         )
 
-
         st.write(
             f"**Date column detected:** "
             f"`{date_column}`"
@@ -397,20 +382,17 @@ if uploaded_file is not None:
             "### 📅 Monthly Analysis"
         )
 
-
         monthly_data = (
             time_analysis[
                 "monthly"
             ]
         )
 
-
         for column, values in monthly_data.items():
 
             st.write(
                 f"#### {column}"
             )
-
 
             monthly_df = pd.DataFrame(
                 list(
@@ -422,12 +404,10 @@ if uploaded_file is not None:
                 ]
             )
 
-
             st.dataframe(
                 monthly_df,
                 use_container_width=True
             )
-
 
             st.bar_chart(
                 monthly_df.set_index(
@@ -444,20 +424,17 @@ if uploaded_file is not None:
             "### 📆 Yearly Analysis"
         )
 
-
         yearly_data = (
             time_analysis[
                 "yearly"
             ]
         )
 
-
         for column, values in yearly_data.items():
 
             st.write(
                 f"#### {column}"
             )
-
 
             yearly_df = pd.DataFrame(
                 list(
@@ -468,7 +445,6 @@ if uploaded_file is not None:
                     column
                 ]
             )
-
 
             st.dataframe(
                 yearly_df,
@@ -484,13 +460,11 @@ if uploaded_file is not None:
             "### 🏆 Best & Worst Month"
         )
 
-
         best_worst = (
             time_analysis[
                 "best_worst"
             ]
         )
-
 
         for column, values in best_worst.items():
 
@@ -498,9 +472,7 @@ if uploaded_file is not None:
                 f"#### {column}"
             )
 
-
             col1, col2 = st.columns(2)
-
 
             col1.metric(
                 "Best Month",
@@ -509,7 +481,6 @@ if uploaded_file is not None:
                 ],
                 f"{values['best_value']:,.2f}"
             )
-
 
             col2.metric(
                 "Worst Month",
@@ -528,9 +499,7 @@ if uploaded_file is not None:
         "🔍 Outlier Detection"
     )
 
-
     outliers = detect_outliers(df)
-
 
     if outliers:
 
@@ -540,29 +509,24 @@ if uploaded_file is not None:
                 f"### 📌 {column}"
             )
 
-
             st.write(
                 f"**Number of outliers:** "
                 f"{details['count']}"
             )
-
 
             st.write(
                 f"**Lower boundary:** "
                 f"{details['lower_bound']:.2f}"
             )
 
-
             st.write(
                 f"**Upper boundary:** "
                 f"{details['upper_bound']:.2f}"
             )
 
-
             st.write(
                 "**Outlier values:**"
             )
-
 
             st.dataframe(
                 pd.DataFrame({
@@ -573,7 +537,6 @@ if uploaded_file is not None:
                 }),
                 use_container_width=True
             )
-
 
     else:
 
@@ -591,7 +554,6 @@ if uploaded_file is not None:
         "📈 Statistical Summary"
     )
 
-
     numeric_columns = (
         df.select_dtypes(
             include="number"
@@ -599,7 +561,6 @@ if uploaded_file is not None:
         .columns
         .tolist()
     )
-
 
     if numeric_columns:
 
@@ -625,9 +586,7 @@ if uploaded_file is not None:
         "📌 Dynamic Key Performance Indicators"
     )
 
-
     kpis = generate_kpis(df)
-
 
     if kpis:
 
@@ -637,41 +596,34 @@ if uploaded_file is not None:
                 f"### {column}"
             )
 
-
             col1, col2, col3, col4, col5 = (
                 st.columns(5)
             )
-
 
             col1.metric(
                 "Total",
                 f"{values['sum']:,.2f}"
             )
 
-
             col2.metric(
                 "Average",
                 f"{values['average']:,.2f}"
             )
-
 
             col3.metric(
                 "Minimum",
                 f"{values['minimum']:,.2f}"
             )
 
-
             col4.metric(
                 "Maximum",
                 f"{values['maximum']:,.2f}"
             )
 
-
             col5.metric(
                 "Count",
                 f"{values['count']:,}"
             )
-
 
     else:
 
@@ -689,84 +641,59 @@ if uploaded_file is not None:
         "🧠 Automatic Business Analysis"
     )
 
-
     verified_findings = (
         generate_verified_findings(df)
     )
 
-
-    main_numeric = (
-        verified_findings[
-            "main_columns"
-        ][
-            "main_numeric_column"
-        ]
-    )
-
-
-    main_category = (
-        verified_findings[
-            "main_columns"
-        ][
-            "main_category_column"
-        ]
-    )
-
-
-    numeric_analysis = (
-        verified_findings[
-            "main_numeric_analysis"
-        ]
-    )
-
-
-    category_analysis = (
-        verified_findings[
-            "category_analysis"
-        ]
-    )
+    main_numeric = find_main_numeric_column(df)
+    main_category = find_main_category(df)
 
 
     # --------------------------------------------------------
     # MAIN NUMERICAL METRIC
     # --------------------------------------------------------
 
-    if numeric_analysis:
+    if main_numeric:
 
-        st.write(
-            f"**Main numerical metric detected:** "
-            f"`{main_numeric}`"
-        )
+        numeric_series = pd.to_numeric(
+            df[main_numeric],
+            errors="coerce"
+        ).dropna()
 
+        if not numeric_series.empty:
 
-        col1, col2, col3 = (
-            st.columns(3)
-        )
+            total = numeric_series.sum()
+            average = numeric_series.mean()
+            maximum = numeric_series.max()
 
+            st.write(
+                f"**Main numerical metric detected:** "
+                f"`{main_numeric}`"
+            )
 
-        col1.metric(
-            "Total",
-            f"{numeric_analysis['total']:,.2f}"
-        )
+            col1, col2, col3 = st.columns(3)
 
+            col1.metric(
+                "Total",
+                f"{total:,.2f}"
+            )
 
-        col2.metric(
-            "Average",
-            f"{numeric_analysis['average']:,.2f}"
-        )
+            col2.metric(
+                "Average",
+                f"{average:,.2f}"
+            )
 
-
-        col3.metric(
-            "Maximum",
-            f"{numeric_analysis['maximum']:,.2f}"
-        )
+            col3.metric(
+                "Maximum",
+                f"{maximum:,.2f}"
+            )
 
 
     # --------------------------------------------------------
     # CATEGORY PERFORMANCE
     # --------------------------------------------------------
 
-    if category_analysis:
+    if main_category and main_numeric:
 
         st.write(
             f"**Category analysis:** "
@@ -774,52 +701,56 @@ if uploaded_file is not None:
             f"`{main_numeric}`"
         )
 
-
-        col1, col2 = (
-            st.columns(2)
-        )
-
-
-        col1.metric(
-            "Highest Category",
-            category_analysis[
-                "highest_category"
-            ],
-            f"{category_analysis['highest_value']:,.2f}"
-        )
-
-
-        col2.metric(
-            "Lowest Category",
-            category_analysis[
-                "lowest_category"
-            ],
-            f"{category_analysis['lowest_value']:,.2f}"
-        )
-
-
         category_totals = (
-            pd.Series(
-                category_analysis[
-                    "category_totals"
-                ]
-            )
+            df.groupby(
+                main_category
+            )[main_numeric]
+            .sum()
             .sort_values(
                 ascending=False
             )
         )
 
+        if not category_totals.empty:
 
-        st.write(
-            f"### 📊 {main_numeric} by "
-            f"{main_category}"
-        )
+            highest_category = (
+                category_totals.index[0]
+            )
 
+            highest_value = (
+                category_totals.iloc[0]
+            )
 
-        st.bar_chart(
-            category_totals
-        )
+            lowest_category = (
+                category_totals.index[-1]
+            )
 
+            lowest_value = (
+                category_totals.iloc[-1]
+            )
+
+            col1, col2 = st.columns(2)
+
+            col1.metric(
+                "Highest Category",
+                highest_category,
+                f"{highest_value:,.2f}"
+            )
+
+            col2.metric(
+                "Lowest Category",
+                lowest_category,
+                f"{lowest_value:,.2f}"
+            )
+
+            st.write(
+                f"### 📊 {main_numeric} by "
+                f"{main_category}"
+            )
+
+            st.bar_chart(
+                category_totals
+            )
 
     else:
 
@@ -839,7 +770,6 @@ if uploaded_file is not None:
             "🔗 Correlation Analysis"
         )
 
-
         correlation = (
             df[
                 numeric_columns
@@ -847,17 +777,14 @@ if uploaded_file is not None:
             .corr()
         )
 
-
         st.dataframe(
             correlation,
             use_container_width=True
         )
 
-
         fig, ax = plt.subplots(
             figsize=(8, 5)
         )
-
 
         sns.heatmap(
             correlation,
@@ -866,11 +793,9 @@ if uploaded_file is not None:
             ax=ax
         )
 
-
         ax.set_title(
             "Correlation Heatmap"
         )
-
 
         st.pyplot(
             fig
@@ -885,23 +810,14 @@ if uploaded_file is not None:
         "🤖 AI Data Analyst"
     )
 
-
     st.write(
         "Generate automatic business insights "
-        "from your verified dataset analysis "
-        "using local AI."
+        "from your verified dataset analysis."
     )
-
 
     if st.button(
         "Generate AI Insights"
     ):
-
-        # Generate dataset-independent findings
-        verified_findings = (
-            generate_verified_findings(df)
-        )
-
 
         with st.spinner(
             "🤖 AI is analyzing your verified "
@@ -911,7 +827,6 @@ if uploaded_file is not None:
             insights = generate_insights(
                 verified_findings
             )
-
 
         st.markdown(
             insights
@@ -926,16 +841,13 @@ if uploaded_file is not None:
         "💬 Ask Your Data"
     )
 
-
     st.write(
         "Ask questions about your uploaded dataset."
     )
 
-
     question = st.text_input(
         "Enter your question"
     )
-
 
     if st.button(
         "Ask"
@@ -952,11 +864,9 @@ if uploaded_file is not None:
                     question
                 )
 
-
             st.success(
                 answer
             )
-
 
         else:
 
