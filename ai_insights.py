@@ -28,11 +28,9 @@ def get_groq_api_key():
 def use_ollama():
 
     try:
-
         value = st.secrets.get("USE_OLLAMA")
 
         if value is not None:
-
             return str(value).lower() == "true"
 
     except Exception:
@@ -50,35 +48,34 @@ def generate_insights(verified_findings):
     prompt = f"""
 You are a professional business data analyst.
 
-You must produce exactly 5 useful business insights.
-
-Use ONLY the verified dataset findings below.
+Generate exactly 5 useful business insights from the verified
+dataset findings below.
 
 VERIFIED DATASET FINDINGS:
 {verified_findings}
 
 STRICT RULES:
 
-1. Use only facts explicitly present in the verified findings.
-2. Do not calculate anything yourself.
-3. Do not perform arithmetic.
-4. Do not calculate percentages.
-5. Do not calculate ratios.
-6. Do not calculate growth rates.
-7. Do not calculate differences.
-8. Do not invent numbers.
-9. Do not invent categories.
-10. Do not invent dates.
-11. Do not invent products.
-12. Do not combine multiple findings to create a new numerical claim.
-13. Do not change the meaning of any number.
-14. Do not assume that the highest individual value belongs to
-    the highest-performing region.
-15. Do not assume that the lowest individual value belongs to
-    the lowest-performing region.
-16. Do not use missing values or duplicate rows if useful
+1. Use ONLY facts explicitly present in the verified findings.
+2. Do NOT calculate anything.
+3. Do NOT perform arithmetic.
+4. Do NOT calculate percentages.
+5. Do NOT calculate ratios.
+6. Do NOT calculate growth rates.
+7. Do NOT calculate differences.
+8. Do NOT invent numbers.
+9. Do NOT invent categories.
+10. Do NOT invent dates.
+11. Do NOT invent products.
+12. Do NOT combine multiple findings to create new numerical claims.
+13. Do NOT change the meaning of any number.
+14. Do NOT assume that the highest individual value belongs
+    to the highest-performing region.
+15. Do NOT assume that the lowest individual value belongs
+    to the lowest-performing region.
+16. Do NOT use missing values or duplicate rows if five useful
     business findings are available.
-17. Do not repeat the same fact.
+17. Do NOT repeat the same fact.
 18. Return exactly 5 numbered insights.
 19. Keep each insight short and professional.
 20. Do not add an introduction.
@@ -97,15 +94,15 @@ that already exists in the verified findings.
 
 The verified findings are a LOCKED DATABASE.
 
-You are only allowed to select and explain facts that already
-exist in the verified findings.
+You may ONLY select and explain facts that already exist in
+the verified findings.
 
 Return exactly five numbered insights.
 """
 
 
     # ========================================================
-    # TRY OLLAMA FIRST
+    # OLLAMA
     # ========================================================
 
     if use_ollama():
@@ -137,19 +134,14 @@ Return exactly five numbered insights.
 
                 result = response.json()
 
-                ollama_answer = result.get(
+                answer = result.get(
                     "response",
                     ""
                 )
 
-                print(
-                    "OLLAMA RESPONSE LENGTH:",
-                    len(ollama_answer)
-                )
+                if answer and answer.strip():
 
-                if ollama_answer.strip():
-
-                    return ollama_answer.strip()
+                    return answer.strip()
 
         except Exception as error:
 
@@ -160,7 +152,7 @@ Return exactly five numbered insights.
 
 
     # ========================================================
-    # GET GROQ API KEY
+    # GROQ API KEY
     # ========================================================
 
     groq_api_key = get_groq_api_key()
@@ -208,24 +200,28 @@ Return exactly five numbered insights.
 
                     {
                         "role": "user",
-
                         "content": prompt
                     }
 
                 ],
 
+                # Important for GPT-OSS reasoning models
+                "reasoning_format": "hidden",
+
+                "reasoning_effort": "low",
+
                 "temperature": 0,
 
-                "max_tokens": 300
+                "max_completion_tokens": 500
             },
 
             timeout=60
         )
 
 
-        # ----------------------------------------------------
-        # DEBUG STATUS
-        # ----------------------------------------------------
+        # ====================================================
+        # DEBUG INFORMATION
+        # ====================================================
 
         print(
             "GROQ STATUS:",
@@ -238,30 +234,27 @@ Return exactly five numbered insights.
         )
 
 
-        # ----------------------------------------------------
+        # ====================================================
         # SUCCESS
-        # ----------------------------------------------------
+        # ====================================================
 
         if response.status_code == 200:
 
             result = response.json()
 
             print(
-                "GROQ JSON KEYS:",
-                list(result.keys())
+                "GROQ RESPONSE RECEIVED"
             )
-
 
             choices = result.get(
                 "choices",
                 []
             )
 
-
             if not choices:
 
                 print(
-                    "GROQ ERROR: choices list is empty"
+                    "GROQ ERROR: No choices returned"
                 )
 
                 return (
@@ -275,44 +268,76 @@ Return exactly five numbered insights.
             )
 
 
-            answer = message.get(
-                "content",
-                ""
+            content = message.get(
+                "content"
             )
+
+
+            print(
+                "GROQ CONTENT TYPE:",
+                type(content).__name__
+            )
+
+
+            if content is not None:
+
+                content = str(
+                    content
+                ).strip()
+
+            else:
+
+                content = ""
 
 
             print(
                 "GROQ CONTENT LENGTH:",
-                len(answer)
+                len(content)
             )
 
 
-            if answer and answer.strip():
+            # =================================================
+            # FINAL ANSWER
+            # =================================================
 
-                return answer.strip()
+            if content:
 
-
-            # ------------------------------------------------
-            # HANDLE EMPTY CONTENT
-            # ------------------------------------------------
-
-            print(
-                "GROQ ERROR: message content is empty"
-            )
+                return content
 
 
-            # Some API responses can provide a different
-            # output field. Check it safely.
+            # =================================================
+            # FALLBACK: REASONING FIELD
+            # =================================================
 
             reasoning = message.get(
                 "reasoning",
                 ""
             )
 
-            if reasoning and reasoning.strip():
 
-                return reasoning.strip()
+            if reasoning:
 
+                reasoning = str(
+                    reasoning
+                ).strip()
+
+
+            if reasoning:
+
+                print(
+                    "Using reasoning field as fallback."
+                )
+
+                return reasoning
+
+
+            # =================================================
+            # EMPTY RESPONSE
+            # =================================================
+
+            print(
+                "GROQ RETURNED EMPTY CONTENT."
+            )
 
             return (
                 "AI service returned an empty response."
@@ -326,16 +351,19 @@ Return exactly five numbered insights.
         else:
 
             print(
-                "GROQ ERROR RESPONSE:",
+                "GROQ ERROR:",
                 response.text
             )
 
             return (
                 f"AI service error: "
-                f"{response.status_code}\n\n"
-                "Please check the Streamlit Cloud logs."
+                f"{response.status_code}"
             )
 
+
+    # ========================================================
+    # TIMEOUT
+    # ========================================================
 
     except requests.exceptions.Timeout:
 
@@ -345,12 +373,20 @@ Return exactly five numbered insights.
         )
 
 
+    # ========================================================
+    # CONNECTION ERROR
+    # ========================================================
+
     except requests.exceptions.RequestException as error:
 
         return (
             f"Unable to connect to the AI service: {error}"
         )
 
+
+    # ========================================================
+    # OTHER ERROR
+    # ========================================================
 
     except Exception as error:
 
