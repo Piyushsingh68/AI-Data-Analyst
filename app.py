@@ -1,20 +1,22 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 
-from ai_insights import generate_insights
 from analyzer import analyze_dataset
 from charts import generate_charts
 from outlier_detector import detect_outliers
 from kpi_generator import generate_kpis
-from ask_data import answer_question
 from time_analysis import analyze_time_data
+
 from insight_engine import (
     generate_verified_findings,
     find_main_numeric_column,
     find_main_category
 )
+
+from ai_insights import generate_insights
+from ask_data import answer_question
 
 
 # ============================================================
@@ -23,7 +25,7 @@ from insight_engine import (
 
 st.set_page_config(
     page_title="AI Data Analyst",
-    page_icon="🤖",
+    page_icon="📊",
     layout="wide"
 )
 
@@ -32,11 +34,11 @@ st.set_page_config(
 # TITLE
 # ============================================================
 
-st.title("🤖 AI Excel/CSV Data Analyst")
+st.title("📊 AI Excel / CSV Data Analyst")
 
 st.write(
-    "Upload an Excel or CSV file and automatically "
-    "analyze your data."
+    "Upload your CSV or Excel dataset and get automatic "
+    "analysis, charts, KPIs, business insights and AI-powered answers."
 )
 
 
@@ -45,504 +47,378 @@ st.write(
 # ============================================================
 
 uploaded_file = st.file_uploader(
-    "Upload your Excel or CSV file",
+    "📂 Upload your CSV or Excel file",
     type=["csv", "xlsx"]
 )
 
 
+# ============================================================
+# LOAD DATASET
+# ============================================================
+
 if uploaded_file is not None:
 
+    try:
+
+        if uploaded_file.name.lower().endswith(".csv"):
+            df = pd.read_csv(uploaded_file)
+
+        elif uploaded_file.name.lower().endswith(".xlsx"):
+            df = pd.read_excel(uploaded_file)
+
+        else:
+            st.error("Unsupported file format.")
+            st.stop()
+
+    except Exception as error:
+
+        st.error(f"Unable to read the file: {error}")
+        st.stop()
+
+
     # ========================================================
-    # READ DATASET
+    # SUCCESS MESSAGE
     # ========================================================
 
-    if uploaded_file.name.endswith(".csv"):
-        df = pd.read_csv(uploaded_file)
-
-    else:
-        df = pd.read_excel(uploaded_file)
-
-    st.success(
-        "File uploaded successfully!"
-    )
-
-
-    # ========================================================
-    # SQLITE DATABASE
-    # ========================================================
-    # Database saving has been removed from the main upload
-    # flow because Streamlit Cloud can create SQLite state/race
-    # issues. The uploaded dataframe is already available as df.
-
-    st.success(
-        "Dataset loaded successfully!"
-    )
+    st.success("✅ Dataset loaded successfully!")
 
 
     # ========================================================
     # DATASET PREVIEW
     # ========================================================
 
-    st.subheader(
-        "📋 Dataset Preview"
-    )
+    st.header("👀 Dataset Preview")
 
     st.dataframe(
         df.head(10),
-        use_container_width=True
+        width="stretch"
     )
 
 
     # ========================================================
-    # DATASET OVERVIEW
+    # BASIC OVERVIEW
     # ========================================================
 
-    st.subheader(
-        "📊 Dataset Overview"
-    )
-
-    col1, col2, col3 = st.columns(3)
-
-    col1.metric(
-        "Rows",
-        df.shape[0]
-    )
-
-    col2.metric(
-        "Columns",
-        df.shape[1]
-    )
-
-    col3.metric(
-        "Missing Values",
-        int(
-            df.isnull()
-            .sum()
-            .sum()
-        )
-    )
-
-
-    # ========================================================
-    # AUTOMATIC DATASET PROFILE
-    # ========================================================
-
-    st.subheader(
-        "🧠 Automatic Dataset Profile"
-    )
+    st.header("📋 Dataset Overview")
 
     analysis = analyze_dataset(df)
 
     col1, col2, col3, col4 = st.columns(4)
 
-    col1.metric(
-        "Numerical Columns",
-        len(
-            analysis[
-                "numeric_columns"
-            ]
-        )
-    )
-
-    col2.metric(
-        "Categorical Columns",
-        len(
-            analysis[
-                "categorical_columns"
-            ]
-        )
-    )
-
-    col3.metric(
-        "Date Columns",
-        len(
-            analysis[
-                "datetime_columns"
-            ]
-        )
-    )
-
-    col4.metric(
-        "Duplicate Rows",
-        analysis[
-            "duplicate_rows"
-        ]
-    )
-
-
-    # ========================================================
-    # NUMERICAL COLUMNS
-    # ========================================================
-
-    st.write(
-        "### 🔢 Numerical Columns"
-    )
-
-    if analysis[
-        "numeric_columns"
-    ]:
-
-        st.write(
-            ", ".join(
-                analysis[
-                    "numeric_columns"
-                ]
-            )
+    with col1:
+        st.metric(
+            "Rows",
+            analysis["rows"]
         )
 
-    else:
+    with col2:
+        st.metric(
+            "Columns",
+            analysis["columns"]
+        )
 
-        st.info(
-            "No numerical columns detected."
+    with col3:
+        st.metric(
+            "Missing Values",
+            analysis["total_missing_values"]
+        )
+
+    with col4:
+        st.metric(
+            "Duplicate Rows",
+            analysis["duplicate_rows"]
         )
 
 
     # ========================================================
-    # CATEGORICAL COLUMNS
+    # COLUMN INFORMATION
     # ========================================================
 
-    st.write(
-        "### 📝 Categorical Columns"
-    )
+    st.header("🧩 Dataset Profile")
 
-    if analysis[
-        "categorical_columns"
-    ]:
+    col1, col2, col3 = st.columns(3)
 
-        st.write(
-            ", ".join(
-                analysis[
-                    "categorical_columns"
-                ]
-            )
-        )
+    with col1:
 
-    else:
+        st.subheader("🔢 Numeric Columns")
 
-        st.info(
-            "No categorical columns detected."
-        )
+        if analysis["numeric_columns"]:
+
+            for column in analysis["numeric_columns"]:
+                st.write(f"- {column}")
+
+        else:
+            st.write("No numeric columns found.")
 
 
-    # ========================================================
-    # DATE COLUMNS
-    # ========================================================
+    with col2:
 
-    st.write(
-        "### 📅 Date Columns"
-    )
+        st.subheader("🔤 Categorical Columns")
 
-    if analysis[
-        "datetime_columns"
-    ]:
+        if analysis["categorical_columns"]:
 
-        st.write(
-            ", ".join(
-                analysis[
-                    "datetime_columns"
-                ]
-            )
-        )
+            for column in analysis["categorical_columns"]:
+                st.write(f"- {column}")
 
-    else:
+        else:
+            st.write("No categorical columns found.")
 
-        st.info(
-            "No date columns detected."
-        )
+
+    with col3:
+
+        st.subheader("📅 Date Columns")
+
+        if analysis["datetime_columns"]:
+
+            for column in analysis["datetime_columns"]:
+                st.write(f"- {column}")
+
+        else:
+            st.write("No date columns found.")
 
 
     # ========================================================
     # DATA QUALITY
     # ========================================================
 
-    st.subheader(
-        "🧹 Data Quality"
-    )
+    st.header("🧹 Data Quality")
 
-    quality_df = pd.DataFrame({
+    quality_col1, quality_col2 = st.columns(2)
 
-        "Column":
-            df.columns,
+    with quality_col1:
 
-        "Data Type":
-            df.dtypes
-            .astype(str)
-            .values,
+        st.subheader("Missing Values")
 
-        "Missing Values":
-            df.isnull()
-            .sum()
-            .values,
+        if analysis["missing_values"]:
 
-        "Unique Values":
-            df.nunique()
-            .values
-
-    })
-
-    st.dataframe(
-        quality_df,
-        use_container_width=True
-    )
-
-
-    # ========================================================
-    # AUTOMATIC DATA VISUALIZATION
-    # ========================================================
-
-    st.subheader(
-        "📊 Automatic Data Visualization"
-    )
-
-    charts = generate_charts(df)
-
-    if charts:
-
-        for chart_type, figure in charts:
-
-            if chart_type == "bar":
-
-                st.write(
-                    "### 📊 Category Comparison"
-                )
-
-            elif chart_type == "line":
-
-                st.write(
-                    "### 📈 Trend Over Time"
-                )
-
-            elif chart_type == "trend":
-
-                st.write(
-                    "### 📈 Actual vs Trend"
-                )
-
-            elif chart_type == "scatter":
-
-                st.write(
-                    "### 🔗 Relationship Between Variables"
-                )
-
-            elif chart_type == "histogram":
-
-                st.write(
-                    "### 📉 Data Distribution"
-                )
-
-            st.pyplot(
-                figure
-            )
-
-    else:
-
-        st.info(
-            "No suitable charts could be generated "
-            "for this dataset."
-        )
-
-
-    # ========================================================
-    # TIME-BASED ANALYSIS
-    # ========================================================
-
-    st.subheader(
-        "📅 Time-Based Analysis"
-    )
-
-    time_analysis = analyze_time_data(df)
-
-    if "error" in time_analysis:
-
-        st.info(
-            time_analysis[
-                "error"
-            ]
-        )
-
-    else:
-
-        date_column = (
-            time_analysis[
-                "date_column"
-            ]
-        )
-
-        st.write(
-            f"**Date column detected:** "
-            f"`{date_column}`"
-        )
-
-
-        # ----------------------------------------------------
-        # MONTHLY ANALYSIS
-        # ----------------------------------------------------
-
-        st.write(
-            "### 📅 Monthly Analysis"
-        )
-
-        monthly_data = (
-            time_analysis[
-                "monthly"
-            ]
-        )
-
-        for column, values in monthly_data.items():
-
-            st.write(
-                f"#### {column}"
-            )
-
-            monthly_df = pd.DataFrame(
-                list(
-                    values.items()
-                ),
+            missing_df = pd.DataFrame(
+                list(analysis["missing_values"].items()),
                 columns=[
-                    "Month",
-                    column
+                    "Column",
+                    "Missing Values"
                 ]
             )
 
             st.dataframe(
-                monthly_df,
-                use_container_width=True
+                missing_df,
+                width="stretch"
             )
 
-            st.bar_chart(
-                monthly_df.set_index(
-                    "Month"
-                )[column]
+        else:
+
+            st.success(
+                "✅ No missing values found."
             )
 
 
-        # ----------------------------------------------------
-        # YEARLY ANALYSIS
-        # ----------------------------------------------------
+    with quality_col2:
 
-        st.write(
-            "### 📆 Yearly Analysis"
+        st.subheader("Duplicate Rows")
+
+        if analysis["duplicate_rows"] > 0:
+
+            st.warning(
+                f"{analysis['duplicate_rows']} duplicate rows found."
+            )
+
+        else:
+
+            st.success(
+                "✅ No duplicate rows found."
+            )
+
+
+    # ========================================================
+    # AUTOMATIC CHARTS
+    # ========================================================
+
+    st.header("📈 Automatic Data Visualization")
+
+    try:
+
+        charts = generate_charts(df)
+
+        if charts:
+
+            for chart_name, figure in charts:
+
+                st.subheader(
+                    chart_name.replace(
+                        "_",
+                        " "
+                    ).title()
+                )
+
+                st.pyplot(
+                    figure,
+                    width="stretch"
+                )
+
+                plt.close(figure)
+
+        else:
+
+            st.info(
+                "Not enough suitable columns to generate charts."
+            )
+
+    except Exception as error:
+
+        st.warning(
+            f"Some charts could not be generated: {error}"
         )
 
-        yearly_data = (
-            time_analysis[
-                "yearly"
-            ]
+
+    # ========================================================
+    # TIME ANALYSIS
+    # ========================================================
+
+    st.header("📅 Time Analysis")
+
+    try:
+
+        time_result = analyze_time_data(df)
+
+        if time_result:
+
+            if time_result.get("date_column"):
+
+                st.write(
+                    f"**Date column:** "
+                    f"{time_result['date_column']}"
+                )
+
+            if time_result.get("monthly_data"):
+
+                st.subheader(
+                    "Monthly Analysis"
+                )
+
+                for metric, data in time_result[
+                    "monthly_data"
+                ].items():
+
+                    st.write(
+                        f"### {metric}"
+                    )
+
+                    st.dataframe(
+                        data,
+                        width="stretch"
+                    )
+
+            if time_result.get("yearly_data"):
+
+                st.subheader(
+                    "Yearly Analysis"
+                )
+
+                for metric, data in time_result[
+                    "yearly_data"
+                ].items():
+
+                    st.write(
+                        f"### {metric}"
+                    )
+
+                    st.dataframe(
+                        data,
+                        width="stretch"
+                    )
+
+            if time_result.get("best_period"):
+
+                st.subheader(
+                    "🏆 Best Period"
+                )
+
+                for metric, result in time_result[
+                    "best_period"
+                ].items():
+
+                    st.write(
+                        f"**{metric}:** {result}"
+                    )
+
+            if time_result.get("worst_period"):
+
+                st.subheader(
+                    "📉 Worst Period"
+                )
+
+                for metric, result in time_result[
+                    "worst_period"
+                ].items():
+
+                    st.write(
+                        f"**{metric}:** {result}"
+                    )
+
+        else:
+
+            st.info(
+                "No suitable date column was found "
+                "for time analysis."
+            )
+
+    except Exception as error:
+
+        st.warning(
+            f"Time analysis could not be completed: {error}"
         )
-
-        for column, values in yearly_data.items():
-
-            st.write(
-                f"#### {column}"
-            )
-
-            yearly_df = pd.DataFrame(
-                list(
-                    values.items()
-                ),
-                columns=[
-                    "Year",
-                    column
-                ]
-            )
-
-            st.dataframe(
-                yearly_df,
-                use_container_width=True
-            )
-
-
-        # ----------------------------------------------------
-        # BEST AND WORST MONTH
-        # ----------------------------------------------------
-
-        st.write(
-            "### 🏆 Best & Worst Month"
-        )
-
-        best_worst = (
-            time_analysis[
-                "best_worst"
-            ]
-        )
-
-        for column, values in best_worst.items():
-
-            st.write(
-                f"#### {column}"
-            )
-
-            col1, col2 = st.columns(2)
-
-            col1.metric(
-                "Best Month",
-                values[
-                    "best_month"
-                ],
-                f"{values['best_value']:,.2f}"
-            )
-
-            col2.metric(
-                "Worst Month",
-                values[
-                    "worst_month"
-                ],
-                f"{values['worst_value']:,.2f}"
-            )
 
 
     # ========================================================
     # OUTLIER DETECTION
     # ========================================================
 
-    st.subheader(
-        "🔍 Outlier Detection"
-    )
+    st.header("🚨 Outlier Detection")
 
-    outliers = detect_outliers(df)
+    try:
 
-    if outliers:
+        outliers = detect_outliers(df)
 
-        for column, details in outliers.items():
+        if outliers:
 
-            st.write(
-                f"### 📌 {column}"
+            for column, result in outliers.items():
+
+                st.subheader(
+                    f"📌 {column}"
+                )
+
+                st.write(
+                    f"**Outlier Count:** "
+                    f"{result['count']}"
+                )
+
+                st.write(
+                    f"**Lower Bound:** "
+                    f"{result['lower_bound']:.2f}"
+                )
+
+                st.write(
+                    f"**Upper Bound:** "
+                    f"{result['upper_bound']:.2f}"
+                )
+
+                st.write(
+                    "**Outlier Values:**"
+                )
+
+                st.write(
+                    result["values"]
+                )
+
+        else:
+
+            st.success(
+                "✅ No significant outliers detected."
             )
 
-            st.write(
-                f"**Number of outliers:** "
-                f"{details['count']}"
-            )
+    except Exception as error:
 
-            st.write(
-                f"**Lower boundary:** "
-                f"{details['lower_bound']:.2f}"
-            )
-
-            st.write(
-                f"**Upper boundary:** "
-                f"{details['upper_bound']:.2f}"
-            )
-
-            st.write(
-                "**Outlier values:**"
-            )
-
-            st.dataframe(
-                pd.DataFrame({
-                    column:
-                        details[
-                            "values"
-                        ]
-                }),
-                use_container_width=True
-            )
-
-    else:
-
-        st.success(
-            "✅ No outliers detected in the "
-            "numerical columns."
+        st.warning(
+            f"Outlier detection failed: {error}"
         )
 
 
@@ -550,86 +426,80 @@ if uploaded_file is not None:
     # STATISTICAL SUMMARY
     # ========================================================
 
-    st.subheader(
-        "📈 Statistical Summary"
-    )
+    st.header("📊 Statistical Summary")
 
-    numeric_columns = (
-        df.select_dtypes(
-            include="number"
-        )
-        .columns
-        .tolist()
-    )
+    numeric_columns = df.select_dtypes(
+        include=np.number
+    ).columns.tolist()
 
     if numeric_columns:
 
         st.dataframe(
-            df[
-                numeric_columns
-            ].describe(),
-            use_container_width=True
+            df[numeric_columns].describe().T,
+            width="stretch"
         )
 
     else:
 
         st.info(
-            "No numerical columns found."
+            "No numeric columns available for statistics."
         )
 
 
     # ========================================================
-    # DYNAMIC KPIs
+    # KPI GENERATOR
     # ========================================================
 
-    st.subheader(
-        "📌 Dynamic Key Performance Indicators"
-    )
+    st.header("🎯 Key Performance Indicators")
 
-    kpis = generate_kpis(df)
+    try:
 
-    if kpis:
+        kpis = generate_kpis(df)
 
-        for column, values in kpis.items():
+        if kpis:
 
-            st.write(
-                f"### {column}"
+            for column, values in kpis.items():
+
+                st.subheader(
+                    f"📌 {column}"
+                )
+
+                col1, col2, col3, col4 = st.columns(4)
+
+                with col1:
+                    st.metric(
+                        "Total",
+                        f"{values['sum']:,.2f}"
+                    )
+
+                with col2:
+                    st.metric(
+                        "Average",
+                        f"{values['average']:,.2f}"
+                    )
+
+                with col3:
+                    st.metric(
+                        "Minimum",
+                        f"{values['minimum']:,.2f}"
+                    )
+
+                with col4:
+                    st.metric(
+                        "Maximum",
+                        f"{values['maximum']:,.2f}"
+                    )
+
+        else:
+
+            st.info(
+                "No numeric columns available for KPI generation."
             )
 
-            col1, col2, col3, col4, col5 = (
-                st.columns(5)
-            )
+    except Exception as error:
 
-            col1.metric(
-                "Total",
-                f"{values['sum']:,.2f}"
-            )
-
-            col2.metric(
-                "Average",
-                f"{values['average']:,.2f}"
-            )
-
-            col3.metric(
-                "Minimum",
-                f"{values['minimum']:,.2f}"
-            )
-
-            col4.metric(
-                "Maximum",
-                f"{values['maximum']:,.2f}"
-            )
-
-            col5.metric(
-                "Count",
-                f"{values['count']:,}"
-            )
-
-    else:
-
-        st.info(
-            "No numerical columns available "
-            "for KPI generation."
+        st.warning(
+            f"KPI generation failed: {error}"
         )
 
 
@@ -637,126 +507,100 @@ if uploaded_file is not None:
     # AUTOMATIC BUSINESS ANALYSIS
     # ========================================================
 
-    st.subheader(
-        "🧠 Automatic Business Analysis"
-    )
+    st.header("💼 Automatic Business Analysis")
 
-    verified_findings = (
-        generate_verified_findings(df)
-    )
+    try:
 
-    main_numeric = find_main_numeric_column(df)
-    main_category = find_main_category(df)
+        main_numeric = find_main_numeric_column(df)
 
+        main_category = find_main_category(df)
 
-    # --------------------------------------------------------
-    # MAIN NUMERICAL METRIC
-    # --------------------------------------------------------
+        if main_numeric:
 
-    if main_numeric:
+            series = pd.to_numeric(
+                df[main_numeric],
+                errors="coerce"
+            ).dropna()
 
-        numeric_series = pd.to_numeric(
-            df[main_numeric],
-            errors="coerce"
-        ).dropna()
+            if not series.empty:
 
-        if not numeric_series.empty:
+                col1, col2, col3, col4 = st.columns(4)
 
-            total = numeric_series.sum()
-            average = numeric_series.mean()
-            maximum = numeric_series.max()
+                with col1:
+                    st.metric(
+                        f"Total {main_numeric}",
+                        f"{series.sum():,.2f}"
+                    )
 
-            st.write(
-                f"**Main numerical metric detected:** "
-                f"`{main_numeric}`"
+                with col2:
+                    st.metric(
+                        f"Average {main_numeric}",
+                        f"{series.mean():,.2f}"
+                    )
+
+                with col3:
+                    st.metric(
+                        f"Highest {main_numeric}",
+                        f"{series.max():,.2f}"
+                    )
+
+                with col4:
+                    st.metric(
+                        f"Lowest {main_numeric}",
+                        f"{series.min():,.2f}"
+                    )
+
+        if main_category and main_numeric:
+
+            grouped = (
+                df.groupby(main_category)[main_numeric]
+                .sum()
+                .sort_values(
+                    ascending=False
+                )
             )
 
-            col1, col2, col3 = st.columns(3)
+            if not grouped.empty:
 
-            col1.metric(
-                "Total",
-                f"{total:,.2f}"
+                st.subheader(
+                    f"{main_numeric} by {main_category}"
+                )
+
+                business_df = grouped.reset_index()
+
+                business_df.columns = [
+                    main_category,
+                    f"Total {main_numeric}"
+                ]
+
+                st.dataframe(
+                    business_df,
+                    width="stretch"
+                )
+
+                st.write(
+                    f"🏆 **Highest {main_category}:** "
+                    f"{grouped.index[0]} "
+                    f"({grouped.iloc[0]:,.2f})"
+                )
+
+                st.write(
+                    f"📉 **Lowest {main_category}:** "
+                    f"{grouped.index[-1]} "
+                    f"({grouped.iloc[-1]:,.2f})"
+                )
+
+        else:
+
+            st.info(
+                "Automatic business analysis requires "
+                "suitable numeric and categorical columns."
             )
 
-            col2.metric(
-                "Average",
-                f"{average:,.2f}"
-            )
+    except Exception as error:
 
-            col3.metric(
-                "Maximum",
-                f"{maximum:,.2f}"
-            )
-
-
-    # --------------------------------------------------------
-    # CATEGORY PERFORMANCE
-    # --------------------------------------------------------
-
-    if main_category and main_numeric:
-
-        st.write(
-            f"**Category analysis:** "
-            f"`{main_category}` vs "
-            f"`{main_numeric}`"
-        )
-
-        category_totals = (
-            df.groupby(
-                main_category
-            )[main_numeric]
-            .sum()
-            .sort_values(
-                ascending=False
-            )
-        )
-
-        if not category_totals.empty:
-
-            highest_category = (
-                category_totals.index[0]
-            )
-
-            highest_value = (
-                category_totals.iloc[0]
-            )
-
-            lowest_category = (
-                category_totals.index[-1]
-            )
-
-            lowest_value = (
-                category_totals.iloc[-1]
-            )
-
-            col1, col2 = st.columns(2)
-
-            col1.metric(
-                "Highest Category",
-                highest_category,
-                f"{highest_value:,.2f}"
-            )
-
-            col2.metric(
-                "Lowest Category",
-                lowest_category,
-                f"{lowest_value:,.2f}"
-            )
-
-            st.write(
-                f"### 📊 {main_numeric} by "
-                f"{main_category}"
-            )
-
-            st.bar_chart(
-                category_totals
-            )
-
-    else:
-
-        st.info(
-            "No suitable categorical column was "
-            "found for automatic category analysis."
+        st.warning(
+            f"Business analysis failed: {error}"
         )
 
 
@@ -764,112 +608,271 @@ if uploaded_file is not None:
     # CORRELATION ANALYSIS
     # ========================================================
 
+    st.header("🔗 Correlation Analysis")
+
     if len(numeric_columns) >= 2:
 
-        st.subheader(
-            "🔗 Correlation Analysis"
-        )
+        try:
 
-        correlation = (
-            df[
-                numeric_columns
-            ]
-            .corr()
-        )
+            correlation = df[numeric_columns].corr()
 
-        st.dataframe(
-            correlation,
-            use_container_width=True
-        )
-
-        fig, ax = plt.subplots(
-            figsize=(8, 5)
-        )
-
-        sns.heatmap(
-            correlation,
-            annot=True,
-            fmt=".2f",
-            ax=ax
-        )
-
-        ax.set_title(
-            "Correlation Heatmap"
-        )
-
-        st.pyplot(
-            fig
-        )
-
-
-    # ========================================================
-    # AI DATA ANALYST
-    # ========================================================
-
-    st.subheader(
-        "🤖 AI Data Analyst"
-    )
-
-    st.write(
-        "Generate automatic business insights "
-        "from your verified dataset analysis."
-    )
-
-    if st.button(
-        "Generate AI Insights"
-    ):
-
-        with st.spinner(
-            "🤖 AI is analyzing your verified "
-            "dataset findings..."
-        ):
-
-            insights = generate_insights(
-                verified_findings
+            fig, ax = plt.subplots(
+                figsize=(9, 6)
             )
 
-        st.markdown(
-            insights
+            image = ax.imshow(
+                correlation.values,
+                aspect="auto"
+            )
+
+            ax.set_xticks(
+                range(len(correlation.columns))
+            )
+
+            ax.set_yticks(
+                range(len(correlation.columns))
+            )
+
+            ax.set_xticklabels(
+                correlation.columns,
+                rotation=45,
+                ha="right"
+            )
+
+            ax.set_yticklabels(
+                correlation.columns
+            )
+
+            ax.set_title(
+                "Correlation Heatmap"
+            )
+
+            fig.colorbar(
+                image,
+                ax=ax
+            )
+
+            plt.tight_layout()
+
+            st.pyplot(
+                fig,
+                width="stretch"
+            )
+
+            plt.close(fig)
+
+        except Exception as error:
+
+            st.warning(
+                f"Correlation analysis failed: {error}"
+            )
+
+    else:
+
+        st.info(
+            "At least two numeric columns are required "
+            "for correlation analysis."
         )
+
+
+    # ========================================================
+    # VERIFIED DATASET FINDINGS
+    # ========================================================
+
+    st.header("🔎 Verified Dataset Findings")
+
+    try:
+
+        verified_findings = generate_verified_findings(df)
+
+        st.code(
+            verified_findings,
+            language="text"
+        )
+
+    except Exception as error:
+
+        verified_findings = ""
+
+        st.error(
+            f"Unable to generate verified findings: {error}"
+        )
+
+
+    # ========================================================
+    # AI INSIGHTS
+    # ========================================================
+
+    st.header("🤖 AI Insights")
+
+    st.write(
+        "Generate five business insights using only "
+        "verified facts from your dataset."
+    )
+
+    if not verified_findings:
+
+        st.warning(
+            "Verified dataset findings are unavailable. "
+            "AI insights cannot be generated."
+        )
+
+    else:
+
+        if st.button(
+            "🚀 Generate AI Insights",
+            key="generate_ai_insights"
+        ):
+
+            with st.spinner(
+                "🤖 AI is analyzing your verified dataset findings..."
+            ):
+
+                try:
+
+                    insights = generate_insights(
+                        verified_findings
+                    )
+
+                    # ----------------------------------------
+                    # RESPONSE CHECK
+                    # ----------------------------------------
+
+                    if insights is None:
+
+                        st.error(
+                            "❌ AI returned no response."
+                        )
+
+                    elif isinstance(
+                        insights,
+                        str
+                    ) and insights.strip():
+
+                        st.success(
+                            "✅ AI insights generated successfully!"
+                        )
+
+                        st.subheader(
+                            "📊 AI-Generated Business Insights"
+                        )
+
+                        st.markdown(
+                            insights
+                        )
+
+                    else:
+
+                        st.error(
+                            "❌ AI returned an empty response."
+                        )
+
+                        st.write(
+                            "Raw AI response:"
+                        )
+
+                        st.code(
+                            repr(insights)
+                        )
+
+                except Exception as error:
+
+                    st.error(
+                        "❌ AI insight generation failed."
+                    )
+
+                    st.exception(
+                        error
+                    )
 
 
     # ========================================================
     # ASK YOUR DATA
     # ========================================================
 
-    st.subheader(
-        "💬 Ask Your Data"
-    )
+    st.header("💬 Ask Your Data")
 
     st.write(
-        "Ask questions about your uploaded dataset."
+        "Ask a question about the uploaded dataset."
     )
 
     question = st.text_input(
-        "Enter your question"
+        "Example: What is the highest sales value?"
     )
 
     if st.button(
-        "Ask"
+        "🔍 Ask Question",
+        key="ask_data_button"
     ):
 
-        if question.strip():
+        if not question.strip():
+
+            st.warning(
+                "Please enter a question."
+            )
+
+        else:
 
             with st.spinner(
                 "🔎 Analyzing your question..."
             ):
 
-                answer = answer_question(
-                    df,
-                    question
-                )
+                try:
 
-            st.success(
-                answer
-            )
+                    answer = answer_question(
+                        df,
+                        question
+                    )
 
-        else:
+                    if answer:
 
-            st.warning(
-                "Please enter a question first."
-            )
+                        st.subheader(
+                            "💡 Answer"
+                        )
+
+                        st.write(
+                            answer
+                        )
+
+                    else:
+
+                        st.warning(
+                            "No answer could be generated."
+                        )
+
+                except Exception as error:
+
+                    st.error(
+                        f"Unable to answer the question: {error}"
+                    )
+
+
+# ============================================================
+# NO FILE UPLOADED
+# ============================================================
+
+else:
+
+    st.info(
+        "👆 Upload a CSV or Excel file to start your analysis."
+    )
+
+    st.markdown(
+        """
+### 🚀 Features
+
+- 📋 Dataset preview
+- 📊 Dataset overview
+- 🧩 Automatic column detection
+- 🧹 Data quality analysis
+- 📈 Automatic charts
+- 📅 Time-series analysis
+- 🚨 Outlier detection
+- 📊 Statistical analysis
+- 🎯 KPI generation
+- 💼 Automatic business analysis
+- 🔗 Correlation analysis
+- 🤖 AI-generated business insights
+- 💬 Ask Your Data
+        """
+    )
