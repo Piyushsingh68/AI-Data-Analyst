@@ -1,44 +1,65 @@
-# 🤖 AI Data Analyst
+# AI Data Analyst
 
-An AI-powered data analysis dashboard built with Python, Pandas, Streamlit, Matplotlib, and local AI.
+An AI-powered data analysis web application built with Python and Streamlit that allows users to upload CSV/Excel datasets and automatically generate data analysis, KPIs, visualizations, time-based analysis, outlier detection, and AI-powered business insights.
 
-The application allows users to upload CSV or Excel datasets and automatically perform data analysis, generate charts, calculate KPIs, detect data-quality issues and outliers, analyze time-based trends, and ask questions about their data.
+## Live Demo
 
-## 🚀 Live Demo
-
-**Streamlit Dashboard:**  
 https://ai-data-analyst-piyush.streamlit.app/
 
-**GitHub Repository:**  
+## GitHub Repository
+
 https://github.com/Piyushsingh68/AI-Data-Analyst
 
-## 📌 Project Overview
+---
 
-AI Data Analyst is a web-based analytics application designed to simplify the process of exploring and understanding datasets.
+## Project Overview
 
-The application automatically examines an uploaded dataset and provides:
+The AI Data Analyst simplifies the data analysis workflow by combining traditional Python-based data analysis with AI-generated business insights.
 
-- Dataset overview
-- Column and data-type analysis
-- Missing-value detection
-- Duplicate-row detection
-- Numerical statistics
-- Categorical analysis
-- KPI calculations
-- Business insights
-- Automatic charts
-- Time-series analysis
-- Trend analysis
-- Outlier detection
-- Correlation analysis
-- AI-generated insights
-- Natural-language questions about the dataset
+Users can upload a CSV or Excel file, and the application automatically analyzes the dataset and presents useful information through an interactive Streamlit dashboard.
 
-The project is designed to work with different CSV and Excel datasets rather than being limited to a single dataset.
+The application can:
 
-## ✨ Features
+- Analyze dataset structure
+- Detect numerical, categorical, and date columns
+- Calculate KPIs
+- Detect missing values
+- Detect duplicate records
+- Detect statistical outliers
+- Generate automatic visualizations
+- Perform time-based analysis
+- Identify verified business findings
+- Generate AI-powered business insights
 
-### 📊 Dataset Analysis
+---
+
+## Technologies Used
+
+- Python
+- Pandas
+- NumPy
+- Matplotlib
+- Seaborn
+- Streamlit
+- SQLite
+- Requests
+- Ollama
+- Groq API
+- Git
+- GitHub
+
+---
+
+## Key Features
+
+### Dataset Upload
+
+Supports:
+
+- CSV files
+- Excel (`.xlsx`) files
+
+### Dataset Analysis
 
 Automatically identifies:
 
@@ -48,40 +69,27 @@ Automatically identifies:
 - Numerical columns
 - Categorical columns
 - Date/time columns
-- Unique values
 - Missing values
 - Duplicate rows
+- Unique values
 
-### 📈 Statistical Analysis
+### KPI Generation
 
 For numerical columns, the application calculates:
 
-- Count
-- Sum
+- Total
 - Average
 - Minimum
 - Maximum
-- Statistical summaries
+- Count
 
-### 💰 KPI Generator
+### Outlier Detection
 
-The KPI module automatically calculates important metrics for numerical columns.
+The application uses the Interquartile Range (IQR) method to identify potential outliers in numerical columns.
 
-Examples:
+### Automatic Data Visualization
 
-- Total Sales
-- Average Sales
-- Minimum Sales
-- Maximum Sales
-- Total Profit
-- Average Profit
-- Total Quantity
-
-### 📉 Automatic Charts
-
-The application automatically generates visualizations based on the available dataset columns.
-
-Supported charts include:
+The application can automatically generate:
 
 - Bar charts
 - Line charts
@@ -89,98 +97,100 @@ Supported charts include:
 - Scatter plots
 - Histograms
 
-### 🕒 Time Analysis
+### Time Analysis
 
-If a dataset contains a date column, the application can perform:
+When a date column is detected, the application can analyze:
 
-- Monthly analysis
-- Yearly analysis
-- Best-performing period analysis
-- Worst-performing period analysis
-- Time-based sales analysis
-- Time-based profit analysis
-- Trend analysis
+- Monthly trends
+- Yearly trends
+- Best-performing periods
+- Worst-performing periods
 
-### 🚨 Outlier Detection
+### Verified Business Findings
 
-The application detects potential outliers in numerical columns using the IQR (Interquartile Range) method.
+Before sending information to the AI model, the application generates verified findings directly from the dataset.
 
-The analysis identifies:
+This helps ensure that AI-generated insights are based on actual calculated results rather than unsupported assumptions.
 
-- Lower bound
-- Upper bound
-- Number of outliers
-- Outlier values
+### AI-Powered Insights
 
-### 🔍 Correlation Analysis
+The application supports:
 
-When multiple numerical columns are available, the application calculates correlations between numerical variables.
-
-This can help identify relationships between metrics such as:
-
-- Sales and Profit
-- Sales and Quantity
-- Profit and Quantity
-
-### 🧠 Automatic Business Analysis
-
-The application analyzes the dataset and identifies important business findings such as:
-
-- Highest-performing category
-- Lowest-performing category
-- Total values
-- Average values
-- Data-quality issues
-- Important numerical patterns
-
-The analysis uses actual dataset values.
-
-### 🤖 AI Data Analyst
-
-The project includes a local AI-powered analysis feature using Ollama and the Qwen 2.5 3B model.
-
-The AI receives verified findings from the Python analysis modules and generates business-oriented insights.
-
-This helps keep AI-generated responses grounded in the actual dataset.
-
-### 💬 Ask Your Data
-
-Users can ask questions about their dataset using natural language.
-
-Example questions:
-
-- What is the total sales?
-- Which region has the highest sales?
-- Which region has the lowest sales?
-- Show sales by region.
-- Compare Laptop and Mobile sales.
-- What is the average sales?
-- What is the highest sales?
-
-The application interprets the question and attempts to return an answer based on the uploaded dataset.
-
-## 🛠️ Technologies Used
-
-- Python
-- Pandas
-- NumPy
-- Matplotlib
-- Seaborn
-- Streamlit
-- OpenPyXL
+**Local AI**
 - Ollama
 - Qwen 2.5 3B
-- Git
-- GitHub
 
-## 📂 Project Structure
+**Cloud AI fallback**
+- Groq API
+- GPT-OSS 20B
+
+If the local AI service is unavailable or times out, the application can use Groq as a fallback.
+
+---
+
+## AI Insight Workflow
+
+```text
+Upload Dataset
+      ↓
+Dataset Analysis
+      ↓
+KPI Generation
+      ↓
+Statistical Analysis
+      ↓
+Verified Findings
+      ↓
+Local Ollama AI
+      ↓
+If unavailable
+      ↓
+Groq API
+      ↓
+Business Insights
+```
+
+The AI receives verified analytical findings rather than directly performing calculations on the raw dataset.
+
+---
+
+## Example
+
+For a sales dataset containing:
+
+- Date
+- Region
+- Product
+- Sales
+- Profit
+- Quantity
+
+The application can identify findings such as:
+
+```text
+Overall average Sales = 66466.67
+
+Highest individual Sales value = 110000.00
+
+Lowest individual Sales value = 30000.00
+
+Highest Region Sales total = West with 300000.00
+
+Lowest Region Sales total = East with 192000.00
+```
+
+The AI then converts these verified findings into readable business insights.
+
+---
+
+## Project Structure
 
 ```text
 AI_Data_Analyst/
+│
 ├── app.py
 ├── ai_insights.py
 ├── analyzer.py
-├── ask_data.py
 ├── charts.py
 ├── database.py
 ├── insight_engine.py
@@ -188,99 +198,19 @@ AI_Data_Analyst/
 ├── outlier_detector.py
 ├── report_generator.py
 ├── time_analysis.py
-├── data/
-│   └── sales_data.csv
-├── reports/
+├── ask_data.py
 ├── requirements.txt
 ├── README.md
-└── .gitignore
+│
+├── data/
+│   └── sales_data.csv
+│
+└── reports/
 ```
 
-## 🔎 Module Description
+---
 
-| File | Purpose |
-|---|---|
-| `app.py` | Main Streamlit application |
-| `analyzer.py` | Dataset structure and statistical analysis |
-| `charts.py` | Automatic chart generation |
-| `kpi_generator.py` | KPI calculations |
-| `outlier_detector.py` | IQR-based outlier detection |
-| `time_analysis.py` | Date and time-based analysis |
-| `insight_engine.py` | Business insight generation |
-| `ai_insights.py` | Local AI-powered insights |
-| `ask_data.py` | Natural-language dataset questions |
-| `database.py` | Dataset/database handling |
-| `report_generator.py` | Report-generation functionality |
-
-## 📋 Sample Dataset
-
-The project includes a sample sales dataset containing:
-
-- Date
-- Product
-- Region
-- Sales
-- Profit
-- Quantity
-
-Example products:
-
-- Laptop
-- Mobile
-- Tablet
-
-Example regions:
-
-- North
-- South
-- East
-- West
-
-## 📊 Sample Analysis
-
-The included sample dataset contains 15 rows.
-
-### Sales
-
-- Total Sales: 997,000
-- Average Sales: 66,466.67
-- Minimum Sales: 30,000
-- Maximum Sales: 110,000
-
-### Profit
-
-- Total Profit: 199,400
-- Average Profit: 13,293.33
-- Minimum Profit: 6,000
-- Maximum Profit: 22,000
-
-### Quantity
-
-- Total Quantity: 84
-- Average Quantity: 5.6
-
-### Regional Sales
-
-| Region | Sales |
-|---|---:|
-| West | 300,000 |
-| North | 270,000 |
-| South | 235,000 |
-| East | 192,000 |
-
-The West region has the highest total sales in the sample dataset.
-
-### Product Sales
-
-| Product | Sales |
-|---|---:|
-| Laptop | 555,000 |
-| Mobile | 295,000 |
-| Tablet | 147,000 |
-
-Laptop has the highest total sales among the products in the sample dataset.
-
-## ⚙️ Installation
+## Local Installation
 
 ### 1. Clone the repository
 
@@ -288,7 +218,7 @@ Laptop has the highest total sales among the products in the sample dataset.
 git clone https://github.com/Piyushsingh68/AI-Data-Analyst.git
 ```
 
-### 2. Open the project folder
+### 2. Open the project
 
 ```bash
 cd AI-Data-Analyst
@@ -318,92 +248,88 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-The application will open in your browser at:
+The application will open at:
 
 ```text
 http://localhost:8501
 ```
 
-## 🤖 Running Local AI
+---
 
-The AI features use Ollama locally.
+## Local AI Setup
 
-Pull the Qwen model:
+The project can use Ollama for local AI processing.
 
 ```bash
 ollama pull qwen2.5:3b
 ```
 
-Run the model:
+Then run:
 
 ```bash
 ollama run qwen2.5:3b
 ```
 
-The application communicates with the local Ollama API.
+---
 
-## ☁️ Streamlit Deployment
+## Cloud Deployment
 
-The Streamlit dashboard is deployed using Streamlit Community Cloud.
+The application is deployed using Streamlit Community Cloud.
 
-**Live Application:**
+The deployed application uses the Groq API for cloud-based AI processing.
 
-https://ai-data-analyst-piyush.streamlit.app/
+The API key should be stored securely using Streamlit Secrets or an environment variable.
 
-The basic dashboard functionality can run in the cloud using the dependencies listed in `requirements.txt`.
+Never commit API keys to GitHub.
 
-The local Ollama-based AI functionality requires a locally running Ollama service and is separate from the basic cloud deployment.
+---
 
-## 🎯 Use Cases
+## Security
 
-This project can be used for:
+API credentials are not stored directly in the source code.
 
-- Sales analysis
-- Business reporting
+The application retrieves the Groq API key through environment variables or Streamlit Secrets.
+
+```text
+GROQ_API_KEY
+```
+
+API keys should never be uploaded to GitHub.
+
+---
+
+## Skills Demonstrated
+
+- Python programming
+- Pandas data analysis
+- NumPy
+- Data cleaning
 - Exploratory Data Analysis
-- KPI monitoring
-- Data-quality checking
+- Statistical analysis
+- KPI development
+- Data visualization
 - Time-series analysis
 - Outlier detection
-- Basic business intelligence
-- Natural-language data exploration
-
-## 📚 What I Learned
-
-Through this project, I worked with:
-
-- Python data analysis
-- Pandas and NumPy
-- Data cleaning and profiling
-- Statistical analysis
-- Data visualization
 - Streamlit application development
-- Modular Python development
-- Natural-language data analysis
-- Local AI integration
-- Ollama API
-- Git and GitHub
-- Streamlit deployment
+- REST API integration
+- Local LLM integration
+- Cloud AI integration
+- Git/GitHub
+- Application deployment
 
-## 👨‍💻 Author
+---
+
+## Author
 
 **Piyush Singh**
 
 B.Sc. Physical Science with Computer Science  
 Motilal Nehru College, University of Delhi
 
-**GitHub:**  
-https://github.com/Piyushsingh68
+### Project Links
 
-## ⭐ Future Improvements
+Live Application:  
+https://ai-data-analyst-piyush.streamlit.app/
 
-Possible future enhancements include:
-
-- More advanced natural-language querying
-- More visualization types
-- Automated PDF and Excel reports
-- Improved AI-powered analysis
-- Advanced forecasting
-- Machine-learning based predictions
-- User authentication
-- Cloud-based AI integration
+GitHub:  
+https://github.com/Piyushsingh68/AI-Data-Analyst
